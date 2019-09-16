@@ -107,8 +107,9 @@ int tinyprintf(const char *format, ...)
 
     while (*format != '\0')
     {
-        if (*format != '%'
-            && (*(format + 1) != '\0' || !is_char_directive(*(format + 1))))
+        char nextChar = *(format + 1);
+        if ((*format == '%' && nextChar != '\0' && !is_char_directive(nextChar))
+            || (*format != '%'))
         {
             handle_character(*format, &b);
             format++;
