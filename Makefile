@@ -4,8 +4,8 @@ CFLAGS = -Wall -Werror -Wextra -std=c99 -pedantic
 SRC_TEST = test.c
 BIN_TEST = test
 
-SRC = tinyprintf.c
-OBJ = tinyprintf.o
+SRC = tinyprintf.c my_itoa_base.c
+OBJ = tinyprintf.o my_itoa_base.o
 LIB = libtinyprintf.a
 
 

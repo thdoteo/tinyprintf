@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define BUFFER_SIZE 2048
+#include "tinyprintf.h"
+#include "my_itoa_base.h"
+
+#define BUFFER_SIZE 512
 
 /*
 ** Functions - Buffer
@@ -27,6 +30,18 @@ int clear_and_print_buffer(char buffer[], int *bufferIndex)
     return length;
 }
 
+void add_char_buffer(char c, char buffer[], int *bufferIndex)
+{
+    // Handle full buffer
+    if (*bufferIndex == BUFFER_SIZE - 1)
+    {
+        clear_and_print_buffer(buffer, bufferIndex);
+    }
+
+    buffer[*bufferIndex] = c;
+    *bufferIndex = *bufferIndex + 1;
+}
+
 /*
 ** Functions - Directives
 */
@@ -37,37 +52,15 @@ int is_directive(char c)
         || c == 'o' || c == 'x';
 }
 
-void handle_default(
+void handle_character(
     char value,
     const char **format,
     char buffer[],
     int *index
 )
 {
-    buffer[*index] = value;
-    *index = *index + 1;
+    add_char_buffer(value, buffer, index);
     *format = *format + 1;
-    
-}
-
-void handle_signed_integer(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
-{
-    
-}
-
-void handle_unsigned_integer(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
-{
-    
 }
 
 void handle_string(
@@ -77,10 +70,27 @@ void handle_string(
     int *index
 )
 {
-    
+    while (*value != '\0')
+    {
+        add_char_buffer(*value, buffer, index);
+        value++;
+    }
+    *format = *format + 1;
 }
 
-void handle_character(
+void handle_signed_integer(
+    int value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
+    char s[12];
+    my_itoa_base(value, s, "0123456789");
+    handle_string(s, format, buffer, index);
+}
+
+void handle_unsigned_integer(
     int value,
     const char **format,
     char buffer[],
@@ -117,10 +127,10 @@ void handle_directives(
     va_list args
 )
 {
-    format++;
+    *format = *format + 1;
 
     if (**format == '%')
-        handle_default('%', format, buffer, index);
+        handle_character(**format, format, buffer, index);
     else if (**format == 'd')
         handle_signed_integer(va_arg(args, int), format, buffer, index);
     else if (**format == 'u')
@@ -128,7 +138,7 @@ void handle_directives(
     else if (**format == 's')
         handle_string(va_arg(args, char*), format, buffer, index);
     else if (**format == 'c')
-        handle_character(va_arg(args, int), format, buffer, index);
+        handle_character(va_arg(args, int) + '0', format, buffer, index);
     else if (**format == 'o')
         handle_octal(va_arg(args, unsigned), format, buffer, index);
     else if (**format == 'x')
@@ -153,7 +163,7 @@ int tinyprintf(const char *format, ...)
         if (*format != '%'
             && (*(format + 1) != '\0' || !is_directive(*(format + 1))))
         {
-            handle_default(*format, &format, buffer, &bufferIndex);
+            handle_character(*format, &format, buffer, &bufferIndex);
         }
         else
         {
