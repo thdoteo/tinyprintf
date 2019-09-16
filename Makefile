@@ -11,15 +11,14 @@ LIB = libtinyprintf.a
 
 
 test: $(SRC) $(SRC_TEST)
-	$(CC) -o $(BIN_TEST) $(SRC) $(SRC_TEST)
+	$(CC) $(CFLAGS) -o $(BIN_TEST) $(SRC) $(SRC_TEST)
 
 
 
 library: $(OBJ)
 	ar -csr $(LIB) $(OBJ)
 
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -c -o $(OBJ) $(SRC)
+$(OBJ):
 
 
 

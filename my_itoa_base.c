@@ -1,14 +1,14 @@
-int get_digits_in_number(int n)
+int reverse_int(int n)
 {
-    int count = 0;
+    int result = 0;
 
     while (n > 0)
     {
+        result = (n % 10) + result * 10;
         n /= 10;
-        count++;
     }
 
-    return count;
+    return result;
 }
 
 int str_length(const char *str)
@@ -39,29 +39,38 @@ int get_char_at(int n, const char *str, int length)
     return c;
 }
 
+int power(int a, int b)
+{
+    while (b > 0)
+    {
+        a *= a;
+        b--;
+    }
+    return a;
+}
+
 char *my_itoa_base(int n, char *s, const char *base)
 {
     int baseLength = str_length(base);
 
-    int abs = (n < 0) ? -n : n;
-    char *p = s + get_digits_in_number(abs);
-
-    if (n >= 0)
+    int strLength = 0;
+    int a = n;
+    while (a > 0)
     {
-        p--;
+        strLength++;
+        a /= baseLength;
     }
 
-    while (p != s - 1)
+    int i = 0;
+    while (n > 0)
     {
-        *p = get_char_at((abs % baseLength), base, baseLength);
-        p--;
-        abs /= baseLength;
+        s[strLength - i - 1] = base[n % baseLength];
+        n /= baseLength;
+        i++;
     }
 
-    if (n < 0)
-    {
-        *s = '-';
-    }
+    //s[0] = '\0';
+    s[strLength] = '\0';
 
     return s;
 }

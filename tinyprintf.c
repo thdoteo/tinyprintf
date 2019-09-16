@@ -4,145 +4,131 @@
 #include "tinyprintf.h"
 #include "my_itoa_base.h"
 
-#define BUFFER_SIZE 512
-
 /*
 ** Functions - Buffer
 */
 
-int length_buffer(char *buffer)
+void buffer_create(struct buffer *b)
 {
-    int length = 0;
-    while (*buffer != '\0')
+    for (int i = 0; i < BUFFER_MAX_SIZE; i++)
     {
-        length++;
-        buffer++;
+        b->buffer[i] = 0;
     }
-    return length;
+    b->index = 0;
+    b->numberOfCharacters = 0;
 }
 
-int clear_and_print_buffer(char buffer[], int *bufferIndex)
+void buffer_flush(struct buffer *b)
 {
-    buffer[*bufferIndex] = '\0';
-    int length = length_buffer(buffer);
-    fputs(buffer, stdout);
-    *bufferIndex = 0;
-    return length;
+    // Print
+    b->buffer[b->index] = '\0';
+    fputs(b->buffer, stdout);
+
+    // Reset
+    for (int i = 0; i < BUFFER_MAX_SIZE; i++)
+    {
+        b->buffer[i] = 0;
+    }
+    b->numberOfCharacters += b->index;
+    b->index = 0;
 }
 
-void add_char_buffer(char c, char buffer[], int *bufferIndex)
+int buffer_is_full(struct buffer *b)
 {
-    // Handle full buffer
-    if (*bufferIndex == BUFFER_SIZE - 1)
+    return b->index == BUFFER_MAX_SIZE - 1;
+}
+
+void buffer_add(char c, struct buffer *b)
+{
+    if (buffer_is_full(b))
     {
-        clear_and_print_buffer(buffer, bufferIndex);
+        buffer_flush(b);
     }
 
-    buffer[*bufferIndex] = c;
-    *bufferIndex = *bufferIndex + 1;
+    b->buffer[b->index] = c;
+    b->index = b->index + 1;
 }
 
 /*
 ** Functions - Directives
 */
 
-int is_directive(char c)
+int is_char_directive(char c)
 {
     return c == '%' || c == 'd' || c == 'u' || c == 's' || c == 'c'
         || c == 'o' || c == 'x';
 }
 
-void handle_character(
-    char value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_character(char value, struct buffer *b)
 {
-    add_char_buffer(value, buffer, index);
-    *format = *format + 1;
+    buffer_add(value, b);
 }
 
-void handle_string(
-    char *value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_string(char *value, struct buffer *b)
 {
     while (*value != '\0')
     {
-        add_char_buffer(*value, buffer, index);
+        buffer_add(*value, b);
         value++;
     }
-    *format = *format + 1;
 }
 
-void handle_signed_integer(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_signed_integer(int value, struct buffer *b)
 {
     char s[12];
     my_itoa_base(value, s, "0123456789");
-    handle_string(s, format, buffer, index);
+    handle_string(s, b);
 }
 
-void handle_unsigned_integer(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_unsigned_integer(unsigned value, struct buffer *b)
 {
-    
+    char s[12];
+    my_itoa_base(value, s, "0123456789");
+
+    if (s[0] == '-')
+        return;
+
+    handle_string(s, b);
 }
 
-void handle_octal(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_octal(unsigned value, struct buffer *b)
 {
-    
+    char s[50];
+    my_itoa_base(value, s, "01234567");
+
+    if (s[0] == '-')
+        return;
+
+    handle_string(s, b);
 }
 
-void handle_hexadecimal(
-    int value,
-    const char **format,
-    char buffer[],
-    int *index
-)
+void handle_hexadecimal(unsigned value, struct buffer *b)
 {
-    
+    char s[50];
+    my_itoa_base(value, s, "0123456789ABCDEF");
+
+    if (s[0] == '-')
+        return;
+
+    handle_string(s, b);
 }
 
-void handle_directives(
-    const char **format,
-    char buffer[],
-    int *index,
-    va_list args
-)
+void handle_directives(const char *format, struct buffer *b, va_list args)
 {
-    *format = *format + 1;
-
-    if (**format == '%')
-        handle_character(**format, format, buffer, index);
-    else if (**format == 'd')
-        handle_signed_integer(va_arg(args, int), format, buffer, index);
-    else if (**format == 'u')
-        handle_unsigned_integer(va_arg(args, unsigned), format, buffer, index);
-    else if (**format == 's')
-        handle_string(va_arg(args, char*), format, buffer, index);
-    else if (**format == 'c')
-        handle_character(va_arg(args, int) + '0', format, buffer, index);
-    else if (**format == 'o')
-        handle_octal(va_arg(args, unsigned), format, buffer, index);
-    else if (**format == 'x')
-        handle_hexadecimal(va_arg(args, unsigned), format, buffer, index);
+    if (*format == '%')
+        handle_character(*format, b);
+    else if (*format == 'd')
+        handle_signed_integer(va_arg(args, int), b);
+    else if (*format == 'u')
+        handle_unsigned_integer(va_arg(args, unsigned), b);
+    else if (*format == 's')
+        handle_string(va_arg(args, char*), b);
+    else if (*format == 'c')
+        handle_character(va_arg(args, int), b);
+    else if (*format == 'o')
+        handle_octal(va_arg(args, unsigned), b);
+    else if (*format == 'x')
+        handle_hexadecimal(va_arg(args, unsigned), b);
 }
 
 /*
@@ -151,9 +137,8 @@ void handle_directives(
 
 int tinyprintf(const char *format, ...)
 {
-    int numberOfCharacters = 0;
-    int bufferIndex = 0;
-    char buffer[BUFFER_SIZE];
+    struct buffer b;
+    buffer_create(&b);
 
     va_list args;
     va_start(args, format);
@@ -161,29 +146,32 @@ int tinyprintf(const char *format, ...)
     while (*format != '\0')
     {
         if (*format != '%'
-            && (*(format + 1) != '\0' || !is_directive(*(format + 1))))
+            && (*(format + 1) != '\0' || !is_char_directive(*(format + 1))))
         {
-            handle_character(*format, &format, buffer, &bufferIndex);
+            handle_character(*format, &b);
+            format++;
         }
         else
         {
-            handle_directives(&format, buffer, &bufferIndex, args);
+            format++;
+            handle_directives(format, &b, args);
+            format++;
         }
 
         // Handle full buffer
-        if (bufferIndex == BUFFER_SIZE - 1)
+        if (buffer_is_full(&b))
         {
-            numberOfCharacters += clear_and_print_buffer(buffer, &bufferIndex);
+            buffer_flush(&b);
         }
     }
 
     // Print characters remaining in the buffer
-    if (bufferIndex != 0)
+    if (b.index != 0)
     {
-        numberOfCharacters += clear_and_print_buffer(buffer, &bufferIndex);
+        buffer_flush(&b);
     }
 
     va_end(args);
 
-    return numberOfCharacters;
+    return b.numberOfCharacters;
 }
