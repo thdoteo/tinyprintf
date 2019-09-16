@@ -11,7 +11,7 @@ LIB = libtinyprintf.a
 
 
 test: $(SRC) $(SRC_TEST)
-	$(CC) $(CFLAGS) -o $(BIN_TEST) $(SRC) $(SRC_TEST)
+	$(CC) -o $(BIN_TEST) $(SRC) $(SRC_TEST)
 
 
 

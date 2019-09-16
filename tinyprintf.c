@@ -7,55 +7,132 @@
 ** Functions - Buffer
 */
 
-int clear_buffer(char buffer[], int bufferIndex)
+int length_buffer(char *buffer)
 {
-    buffer[bufferIndex] = '\0';
-    return 0;
+    int length = 0;
+    while (*buffer != '\0')
+    {
+        length++;
+        buffer++;
+    }
+    return length;
 }
 
-void print_buffer(char buffer[])
+int clear_and_print_buffer(char buffer[], int *bufferIndex)
 {
+    buffer[*bufferIndex] = '\0';
+    int length = length_buffer(buffer);
     fputs(buffer, stdout);
+    *bufferIndex = 0;
+    return length;
 }
 
 /*
 ** Functions - Directives
 */
 
-void handle_default(
+int is_directive(char c)
+{
+    return c == '%' || c == 'd' || c == 'u' || c == 's' || c == 'c'
+        || c == 'o' || c == 'x';
+}
 
+void handle_default(
+    char value,
+    const char **format,
+    char buffer[],
+    int *index
 )
 {
-
+    buffer[*index] = value;
+    *index = *index + 1;
+    *format = *format + 1;
+    
 }
 
 void handle_signed_integer(
-    int n,
-    const char *format,
+    int value,
+    const char **format,
     char buffer[],
-    int *bufferIndex
+    int *index
 )
 {
-    int n = 0;
+    
+}
+
+void handle_unsigned_integer(
+    int value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
+    
+}
+
+void handle_string(
+    char *value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
+    
+}
+
+void handle_character(
+    int value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
+    
+}
+
+void handle_octal(
+    int value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
+    
+}
+
+void handle_hexadecimal(
+    int value,
+    const char **format,
+    char buffer[],
+    int *index
+)
+{
     
 }
 
 void handle_directives(
-    const char *format,
+    const char **format,
     char buffer[],
-    int *bufferIndex,
+    int *index,
     va_list args
 )
 {
     format++;
 
-    if (*format == '%')
-        handle_default('%', format, buffer, &bufferIndex);
-    else if (*format == 'd')
-        handle_signed_integer(va_arg(args, int), format, buffer, &bufferIndex);
-    else if (*format == 'u')
-        handle_unsigned_integer(va_arg(args, unsigned), format, buffer, &bufferIndex);
-
+    if (**format == '%')
+        handle_default('%', format, buffer, index);
+    else if (**format == 'd')
+        handle_signed_integer(va_arg(args, int), format, buffer, index);
+    else if (**format == 'u')
+        handle_unsigned_integer(va_arg(args, unsigned), format, buffer, index);
+    else if (**format == 's')
+        handle_string(va_arg(args, char*), format, buffer, index);
+    else if (**format == 'c')
+        handle_character(va_arg(args, int), format, buffer, index);
+    else if (**format == 'o')
+        handle_octal(va_arg(args, unsigned), format, buffer, index);
+    else if (**format == 'x')
+        handle_hexadecimal(va_arg(args, unsigned), format, buffer, index);
 }
 
 /*
@@ -73,28 +150,27 @@ int tinyprintf(const char *format, ...)
 
     while (*format != '\0')
     {
-        if (*format != '%' && !is_directive(*(format + 1)))
+        if (*format != '%'
+            && (*(format + 1) != '\0' || !is_directive(*(format + 1))))
         {
-            handle_default(format, buffer, &bufferIndex, args);
+            handle_default(*format, &format, buffer, &bufferIndex);
         }
         else
         {
-            handle_directives(format, buffer, &bufferIndex, args);
+            handle_directives(&format, buffer, &bufferIndex, args);
         }
 
         // Handle full buffer
         if (bufferIndex == BUFFER_SIZE - 1)
         {
-            print_buffer(buffer);
-            bufferIndex = clear_buffer(buffer, bufferIndex);
+            numberOfCharacters += clear_and_print_buffer(buffer, &bufferIndex);
         }
     }
 
     // Print characters remaining in the buffer
     if (bufferIndex != 0)
     {
-        print_buffer(buffer);
-        bufferIndex = clear_buffer(buffer, bufferIndex);
+        numberOfCharacters += clear_and_print_buffer(buffer, &bufferIndex);
     }
 
     va_end(args);

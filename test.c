@@ -5,7 +5,7 @@
 int main(void)
 {
     printf("Result:\n-------------------\n");
-    int n = tinyprintf("Hello world %d.\n", 17);
+    int n = tinyprintf("Hello world.\n");
     printf("Number of characters = %d\n", n);
     return 0;
 }
