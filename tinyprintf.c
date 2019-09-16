@@ -1,53 +1,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "buffer.h"
 #include "tinyprintf.h"
 #include "my_itoa_base.h"
-
-/*
-** Functions - Buffer
-*/
-
-void buffer_create(struct buffer *b)
-{
-    for (int i = 0; i < BUFFER_MAX_SIZE; i++)
-    {
-        b->buffer[i] = 0;
-    }
-    b->index = 0;
-    b->numberOfCharacters = 0;
-}
-
-void buffer_flush(struct buffer *b)
-{
-    // Print
-    b->buffer[b->index] = '\0';
-    fputs(b->buffer, stdout);
-
-    // Reset
-    for (int i = 0; i < BUFFER_MAX_SIZE; i++)
-    {
-        b->buffer[i] = 0;
-    }
-    b->numberOfCharacters += b->index;
-    b->index = 0;
-}
-
-int buffer_is_full(struct buffer *b)
-{
-    return b->index == BUFFER_MAX_SIZE - 1;
-}
-
-void buffer_add(char c, struct buffer *b)
-{
-    if (buffer_is_full(b))
-    {
-        buffer_flush(b);
-    }
-
-    b->buffer[b->index] = c;
-    b->index = b->index + 1;
-}
 
 /*
 ** Functions - Directives
@@ -66,6 +22,12 @@ void handle_character(char value, struct buffer *b)
 
 void handle_string(char *value, struct buffer *b)
 {
+    if (value == NULL)
+    {
+        char nullMessage[] = "(null)";
+        value = nullMessage;
+    }
+
     while (*value != '\0')
     {
         buffer_add(*value, b);
@@ -105,7 +67,7 @@ void handle_octal(unsigned value, struct buffer *b)
 void handle_hexadecimal(unsigned value, struct buffer *b)
 {
     char s[50];
-    my_itoa_base(value, s, "0123456789ABCDEF");
+    my_itoa_base(value, s, "0123456789abcdef");
 
     if (s[0] == '-')
         return;
